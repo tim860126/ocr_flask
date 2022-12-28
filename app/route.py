@@ -97,7 +97,7 @@ def imagePost():
     return msg
 
 def hello_world():
-    return "Hello, MVC框架!"
+    return "123456"
 
 def index():
     title = "Jinja 示範"
