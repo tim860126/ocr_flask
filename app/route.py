@@ -1,9 +1,10 @@
-from flask import render_template,Flask, request, abort
+from flask import render_template,Flask, request, abort , jsonify
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
 from azure.cognitiveservices.vision.computervision.models import VisualFeatureTypes
 from msrest.authentication import CognitiveServicesCredentials
 from imutils.perspective import four_point_transform, order_points
+import base64
 import random
 import time
 import requests
@@ -13,6 +14,12 @@ import numpy as np
 import os
 from urllib.parse import quote
 from PIL import Image, ImageDraw, ImageFont
+
+def base64_to_img(base64_str):
+    byte_data = base64.b64decode(base64_str)
+    encode_image = np.asarray(bytearray(byte_data),dtype="uint8")
+    img_array = cv.imdecode(encode_image, cv.IMREAD_COLOR)
+    return img_array
 
 def label_crop(img):
     
@@ -49,13 +56,16 @@ def label_crop(img):
     cv.imwrite(("{filepath}{filename}.jpg".format(filepath="./", filename="test")), img_wraped)
     
     return "./test.jpg"
-    
+
 def imagePost():
     styleImage = request.files['imageFile'].read() #接收FormData格式
     styleImage = np.fromstring(styleImage, np.uint8) #np.fromstring() 轉成 ndarray 形式
     img = cv.imdecode(styleImage, cv.IMREAD_COLOR) #將 ndarray 轉換成擁有 RGB 3 個 channel 的圖像矩陣格式
     local_save=label_crop(img)
-    
+    msg=to_Azure_ocr(local_save)
+    return msg
+
+def to_Azure_ocr(local_save):
     API_KEY=os.getenv('API_KEY')
 
     ENDPOINT=os.getenv('ENDPOINT')
@@ -95,6 +105,15 @@ def imagePost():
     image.save("result.jpg")
     
     return msg
+
+def base64_Post():
+    base64_str=request.values.get('imgb64')
+    img=base64_to_img(base64_str)
+    cv.imwrite(("{filepath}{filename}.jpg".format(filepath="./", filename="gg")), img)
+    local_save=label_crop(img)
+    msg=to_Azure_ocr(local_save)
+    print(msg)
+    return jsonify(msg)
 
 def hello_world():
     return "123456"
